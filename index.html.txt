@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>英文挖礦遊戲 v8（寶石＋掌聲版 B1L3+B1L4 英選中）</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, "微軟正黑體", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1c92d2 0%, #f2fcfe 40%, #fceabb 100%);
+    }
+    .game-wrapper {
+      width: 95%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+      padding: 24px 22px 26px;
+    }
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .title { font-size: 22px; font-weight: bold; }
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #ffe08a;
+      color: #5c3b00;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+    .status-label { font-weight: 600; }
+    .ore-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #oreIcons { font-size: 20px; }
+    #oreNumber {
+      font-size: 18px;
+      font-weight: bold;
+      color: #e67e22;
+      min-width: 32px;
+      text-align: right;
+    }
+    #roundInfo { font-size: 13px; color: #6b7280; }
+
+    /* 挖礦區：比題目卡小一點 */
+    .toolbar {
+      text-align: center;
+      padding: 6px 10px 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #0ea5e9 0%, #22c55e 50%, #facc15 100%);
+      display: inline-block;
+      margin: 0 auto 4px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .toolbar-inner {
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* 挖礦按鈕（小一點） */
+    #mineBtn {
+      padding: 7px 18px;
+      font-size: 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      box-shadow: 0 3px 9px rgba(34,197,94,0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+    #mineBtn .icon { font-size: 18px; }
+    #mineBtn .label { letter-spacing: 0.04em; }
+
+    @keyframes pulseGlow {
+      0%   { transform: translateY(0) scale(1);   box-shadow: 0 3px 9px rgba(34,197,94,0.5); filter: brightness(1); }
+      50%  { transform: translateY(-1px) scale(1.05); box-shadow: 0 6px 14px rgba(34,197,94,0.75); filter: brightness(1.08); }
+      100% { transform: translateY(0) scale(1);   box-shadow: 0 3px 9px rgba(34,197,94,0.5); filter: brightness(1); }
+    }
+    #mineBtn.attention { animation: pulseGlow 1.9s ease-in-out infinite; }
+    #mineBtn:hover {
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 6px 14px rgba(34,197,94,0.75);
+    }
+    #mineBtn:active {
+      transform: translateY(0px) scale(0.98);
+      box-shadow: 0 2px 6px rgba(34,197,94,0.6);
+      filter: brightness(0.95);
+    }
+
+    /* 題目區：主角，稍微比較大一點 */
+    #questionArea { margin-top: 12px; }
+    .card {
+      border-radius: 16px;
+      background: #f8fafc;
+      padding: 20px 18px 16px;
+      border: 1px solid #dbe3f0;
+      box-shadow: 0 6px 14px rgba(148,163,184,0.45);
+      transform-origin: center;
+    }
+    @keyframes cardPop {
+      0%   { transform: scale(0.9) translateY(8px); opacity: 0; }
+      50%  { transform: scale(1.03) translateY(-2px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .card.pop { animation: cardPop 0.28s ease-out; }
+
+    #lessonTag { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    #questionText { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
+    #optionsArea { margin-top: 6px; }
+
+    /* 選項：隨機亮色 */
+    .option-btn {
+      padding: 8px 14px;
+      margin: 4px;
+      font-size: 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-block;
+      border: 1px solid transparent;
+      color: #111827;
+      transition: transform 0.05s ease, box-shadow 0.15s ease, filter 0.1s ease;
+    }
+    .option-btn:hover {
+      box-shadow: 0 2px 6px rgba(148,163,184,0.5);
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+    .option-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+      filter: brightness(0.96);
+    }
+
+    #message { margin-top: 14px; font-size: 16px; min-height: 24px; }
+    #message.correct { color: #16a34a; }
+    #message.wrong   { color: #b91c1c; }
+
+    .footer-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #6b7280;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-wrapper">
+    <div class="game-header">
+      <div class="title">⛏ 英文挖礦遊戲 v8</div>
+      <div class="badge">寶石版 B1L3 + B1L4 英選中</div>
+    </div>
+
+    <div class="status-row">
+      <div>
+        <span class="status-label">目前寶石：</span>
+        <span class="ore-display">
+          <span id="oreIcons">💎 x 0</span>
+          <span id="oreNumber"></span>
+        </span>
+      </div>
+      <div id="roundInfo"></div>
+    </div>
+
+    <div style="text-align:center;">
+      <div class="toolbar">
+        <div class="toolbar-inner">
+          <button id="mineBtn">
+            <span class="icon">⛏</span>
+            <span class="label">挖礦</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="questionArea">
+      <div class="card" id="questionCard">
+        <div id="lessonTag"></div>
+        <div id="questionText">按下「挖礦」開始你的英文挖礦之旅！</div>
+        <div id="optionsArea"></div>
+      </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="footer-note">提示：本輪會將題庫全部出完，再由你決定要不要進行下一輪。</div>
+  </div>
+
+  <script>
+    // ===== 題庫：B1L3 + B1L4 單字＋片語 =====
+    const vocab = [
+      { english: "recover",  chinese: "康復",        lesson: "L3" },
+      { english: "surgery",  chinese: "外科手術",    lesson: "L3" },
+      { english: "suffer",   chinese: "遭受；受苦",  lesson: "L3" },
+      { english: "disease",  chinese: "疾病",        lesson: "L3" },
+      { english: "realize",  chinese: "察覺；意識到",lesson: "L3" },
+      { english: "describe", chinese: "描述",        lesson: "L3" },
+      { english: "couple",   chinese: "情侶；夫妻",  lesson: "L3" },
+      { english: "encourage",chinese: "鼓勵",        lesson: "L3" },
+      { english: "view",     chinese: "景觀",        lesson: "L3" },
+      { english: "imagine",  chinese: "想像",        lesson: "L3" },
+      { english: "remove",   chinese: "移除",        lesson: "L3" },
+      { english: "reply",    chinese: "回答；回覆",  lesson: "L3" },
+      { english: "return",   chinese: "返回；歸還",  lesson: "L3" },
+      { english: "shocked",  chinese: "震驚的",      lesson: "L3" },
+      { english: "blind",    chinese: "眼盲的",      lesson: "L3" },
+      { english: "whisper",  chinese: "低語；耳語",  lesson: "L3" },
+
+      { english: "turn away",      chinese: "轉頭不看",   lesson: "L3 片語" },
+      { english: "try one's best", chinese: "盡己所能",   lesson: "L3 片語" },
+      { english: "day after day",  chinese: "日復一日",   lesson: "L3 片語" },
+      { english: "in detail",      chinese: "詳細地",     lesson: "L3 片語" },
+      { english: "turn around",    chinese: "轉身",       lesson: "L3 片語" },
+      { english: "pass away",      chinese: "過世",       lesson: "L3 片語" },
+      { english: "nothing but",    chinese: "只有；僅僅", lesson: "L3 片語" },
+
+      { english: "alarm",     chinese: "鬧鐘",            lesson: "L4" },
+      { english: "straight",  chinese: "直接地",          lesson: "L4" },
+      { english: "research",  chinese: "研究",            lesson: "L4" },
+      { english: "oversleep", chinese: "睡過頭",          lesson: "L4" },
+      { english: "amazing",   chinese: "令人驚奇的",      lesson: "L4" },
+      { english: "invent",    chinese: "發明；創造",      lesson: "L4" },
+      { english: "solve",     chinese: "解決",            lesson: "L4" },
+      { english: "regular",   chinese: "一般的",          lesson: "L4" },
+      { english: "chase",     chinese: "追逐",            lesson: "L4" },
+      { english: "promise",   chinese: "承諾",            lesson: "L4" },
+      { english: "design",    chinese: "設計",            lesson: "L4" },
+      { english: "position",  chinese: "擺放",            lesson: "L4" },
+      { english: "particular",chinese: "特定的",          lesson: "L4" },
+      { english: "create",    chinese: "創造",            lesson: "L4" },
+      { english: "encounter", chinese: "遭遇；遇到",      lesson: "L4" },
+
+      { english: "wake up",     chinese: "醒來",          lesson: "L4 片語" },
+      { english: "take action", chinese: "採取行動",      lesson: "L4 片語" },
+      { english: "get out of",  chinese: "離開；走出",    lesson: "L4 片語" },
+      { english: "on time",     chinese: "準時",          lesson: "L4 片語" },
+      { english: "go off",      chinese: "（鬧鐘）發出聲響", lesson: "L4 片語" },
+      { english: "in order to", chinese: "為了⋯⋯",       lesson: "L4 片語" },
+      { english: "in advance",  chinese: "事先",          lesson: "L4 片語" }
+    ];
+
+    let ore = 0;
+    let currentQuestion = null;
+    let isQuestionActive = false;
+
+    let pool = [];
+    let poolIndex = 0;
+
+    let oreIconsSpan, oreNumberSpan, mineBtn,
+        questionText, optionsArea, messageDiv,
+        lessonTag, roundInfo, questionCard;
+
+    // 掌聲音效（請確保同資料夾有這三個檔案）
+    const clapSounds = [
+      new Audio("clap_A.wav"),
+      new Audio("clap_B.wav"),
+      new Audio("clap_C.wav")
+    ];
+
+    const correctMessages = [
+      "✔ 答對！你挖到一顆高級寶石，同時也練了一下腦肌肉。",
+      "✔ 完美！英文腦上線中，寶石自己跳進背包。",
+      "✔ Nice！如果單字也有鑽石等級，你已經在傳說段位。",
+      "✔ 命中答案！礦工公會決定幫你加薪（加在寶石數量裡）。",
+      "✔ 太強了！這題根本是送分寶石，被你輕鬆挖走。"
+    ];
+
+    const wrongMessages = [
+      "✘ 這題沒挖到寶石，但挖到了需要複習的單字。",
+      "✘ 差一點點！再挖幾次，這顆寶石就會變成你的。",
+      "✘ 喔喔～寶石溜走了，下次用英文把它抓回來。",
+      "✘ 沒關係，礦坑很多題，錯一題只是暖身。",
+      "✘ 挖空了這一格，但你多記住了一個正確答案。"
+    ];
+
+    // 隨機用的明亮顏色
+    const optionColors = [
+      "#FF9EC7", "#C39BFF", "#7EDCFF", "#6AA9FF",
+      "#8CFFC4", "#A4FF7E", "#FFD18B", "#FFF49A"
+    ];
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function resetPool() {
+      pool = shuffle(vocab.slice());
+      poolIndex = 0;
+      updateRoundInfo();
+    }
+
+    function updateRoundInfo() {
+      if (!roundInfo) return;
+      const total = vocab.length;
+      const done = poolIndex;
+      roundInfo.textContent = "本輪進度：" + done + " / " + total;
+    }
+
+    function updateOreDisplay() {
+      if (!oreIconsSpan || !oreNumberSpan) return;
+      const maxIcons = 10;
+      const iconsCount = Math.min(ore, maxIcons);
+      let icons = "";
+      if (iconsCount > 0) {
+        icons = "💎".repeat(iconsCount);
+        if (ore > maxIcons) {
+          icons += " +" + (ore - maxIcons);
+        }
+      } else {
+        icons = "💎 x 0";
+      }
+      oreIconsSpan.textContent = icons;
+      oreNumberSpan.textContent = ore > 0 ? "(" + ore + ")" : "";
+    }
+
+    function randomFrom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function playRandomClap() {
+      const sound = randomFrom(clapSounds);
+      try {
+        sound.currentTime = 0;
+        sound.play();
+      } catch (e) {
+        // 有些瀏覽器如果還沒互動可能會擋音效，這裡就安靜略過
+      }
+    }
+
+    function startMining() {
+      if (isQuestionActive) {
+        alert("請先回答目前這一題喔！");
+        return;
+      }
+      if (vocab.length < 4) {
+        alert("題庫至少需要 4 個單字才可以出四選一喔。");
+        return;
+      }
+
+      // 一輪出完：詢問是否再來一輪
+      if (pool.length !== 0 && poolIndex >= pool.length) {
+        const goNext = confirm(
+          "本輪題目已全部完成！\n目前共獲得寶石：" + ore +
+          " 顆。\n\n要再來一輪練習嗎？"
+        );
+        if (!goNext) {
+          messageDiv.textContent = "本輪練習結束，可以休息一下，或關閉畫面。";
+          messageDiv.className = "";
+          return;
+        }
+        resetPool();
+      }
+
+      if (pool.length === 0) {
+        resetPool();
+      }
+
+      const item = pool[poolIndex];
+      poolIndex++;
+      updateRoundInfo();
+
+      const correctChinese = item.chinese;
+      const options = [correctChinese];
+
+      while (options.length < 4) {
+        const randIndex = Math.floor(Math.random() * vocab.length);
+        const candidate = vocab[randIndex].chinese;
+        if (!options.includes(candidate)) {
+          options.push(candidate);
+        }
+      }
+
+      shuffle(options);
+
+      currentQuestion = {
+        english: item.english,
+        correctChinese: correctChinese,
+        lesson: item.lesson,
+        options: options
+      };
+      isQuestionActive = true;
+
+      // 題目卡彈跳動畫
+      if (questionCard) {
+        questionCard.classList.remove("pop");
+        void questionCard.offsetWidth; // 重新觸發動畫
+        questionCard.classList.add("pop");
+      }
+
+      lessonTag.textContent = "出處：" + item.lesson;
+      questionText.textContent = "請選出「" + item.english + "」的正確中文意思：";
+      optionsArea.innerHTML = "";
+
+      options.forEach(function(opt) {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "option-btn";
+
+        // 隨機亮色
+        const color = randomFrom(optionColors);
+        btn.style.backgroundColor = color;
+        btn.style.borderColor = color;
+
+        btn.onclick = function () { checkAnswer(opt); };
+        optionsArea.appendChild(btn);
+      });
+
+      messageDiv.textContent = "";
+      messageDiv.className = "";
+    }
+
+    function checkAnswer(selectedChinese) {
+      if (!isQuestionActive || !currentQuestion) return;
+
+      if (selectedChinese === currentQuestion.correctChinese) {
+        ore += 1;
+        updateOreDisplay();
+        messageDiv.textContent =
+          randomFrom(correctMessages) + "（答案：" + currentQuestion.correctChinese + "）";
+        messageDiv.className = "correct";
+        playRandomClap();
+      } else {
+        messageDiv.textContent =
+          randomFrom(wrongMessages) + " 正解是：「" + currentQuestion.correctChinese + "」。";
+        messageDiv.className = "wrong";
+      }
+
+      isQuestionActive = false;
+      currentQuestion = null;
+      questionText.textContent = "再按一次「挖礦」，挑戰下一題！";
+      optionsArea.innerHTML = "";
+    }
+
+    window.onload = function() {
+      oreIconsSpan = document.getElementById("oreIcons");
+      oreNumberSpan = document.getElementById("oreNumber");
+      mineBtn      = document.getElementById("mineBtn");
+      questionText = document.getElementById("questionText");
+      optionsArea  = document.getElementById("optionsArea");
+      messageDiv   = document.getElementById("message");
+      lessonTag    = document.getElementById("lessonTag");
+      roundInfo    = document.getElementById("roundInfo");
+      questionCard = document.getElementById("questionCard");
+
+      mineBtn.addEventListener("click", startMining);
+      mineBtn.classList.add("attention");
+      resetPool();
+      updateOreDisplay();
+    };
+  </script>
+
+</body>
+</html>
