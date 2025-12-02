@@ -79,7 +79,6 @@
       gap: 8px;
     }
 
-    /* 挖礦按鈕（小一點） */
     #mineBtn {
       padding: 7px 18px;
       font-size: 16px;
@@ -113,7 +112,6 @@
       filter: brightness(0.95);
     }
 
-    /* 題目區：主角，稍微比較大一點 */
     #questionArea { margin-top: 12px; }
     .card {
       border-radius: 16px;
@@ -134,7 +132,6 @@
     #questionText { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
     #optionsArea { margin-top: 6px; }
 
-    /* 選項：隨機亮色 */
     .option-btn {
       padding: 8px 14px;
       margin: 4px;
@@ -213,7 +210,6 @@
   </div>
 
   <script>
-    // ===== 題庫：B1L3 + B1L4 單字＋片語 =====
     const vocab = [
       { english: "recover",  chinese: "康復",        lesson: "L3" },
       { english: "surgery",  chinese: "外科手術",    lesson: "L3" },
@@ -276,7 +272,6 @@
         questionText, optionsArea, messageDiv,
         lessonTag, roundInfo, questionCard;
 
-    // 掌聲音效（請確保同資料夾有這三個檔案）
     const clapSounds = [
       new Audio("clap_A.wav"),
       new Audio("clap_B.wav"),
@@ -299,14 +294,13 @@
       "✘ 挖空了這一格，但你多記住了一個正確答案。"
     ];
 
-    // 隨機用的明亮顏色
     const optionColors = [
       "#FF9EC7", "#C39BFF", "#7EDCFF", "#6AA9FF",
       "#8CFFC4", "#A4FF7E", "#FFD18B", "#FFF49A"
     ];
 
     function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
+      for (let i = array.length - i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
@@ -321,13 +315,10 @@
 
     function updateRoundInfo() {
       if (!roundInfo) return;
-      const total = vocab.length;
-      const done = poolIndex;
-      roundInfo.textContent = "本輪進度：" + done + " / " + total;
+      roundInfo.textContent = "本輪進度：" + poolIndex + " / " + vocab.length;
     }
 
     function updateOreDisplay() {
-      if (!oreIconsSpan || !oreNumberSpan) return;
       const maxIcons = 10;
       const iconsCount = Math.min(ore, maxIcons);
       let icons = "";
@@ -352,9 +343,7 @@
       try {
         sound.currentTime = 0;
         sound.play();
-      } catch (e) {
-        // 有些瀏覽器如果還沒互動可能會擋音效，這裡就安靜略過
-      }
+      } catch (e) {}
     }
 
     function startMining() {
@@ -367,7 +356,6 @@
         return;
       }
 
-      // 一輪出完：詢問是否再來一輪
       if (pool.length !== 0 && poolIndex >= pool.length) {
         const goNext = confirm(
           "本輪題目已全部完成！\n目前共獲得寶石：" + ore +
@@ -381,9 +369,7 @@
         resetPool();
       }
 
-      if (pool.length === 0) {
-        resetPool();
-      }
+      if (pool.length === 0) resetPool();
 
       const item = pool[poolIndex];
       poolIndex++;
@@ -393,8 +379,7 @@
       const options = [correctChinese];
 
       while (options.length < 4) {
-        const randIndex = Math.floor(Math.random() * vocab.length);
-        const candidate = vocab[randIndex].chinese;
+        const candidate = vocab[Math.floor(Math.random() * vocab.length)].chinese;
         if (!options.includes(candidate)) {
           options.push(candidate);
         }
@@ -410,12 +395,9 @@
       };
       isQuestionActive = true;
 
-      // 題目卡彈跳動畫
-      if (questionCard) {
-        questionCard.classList.remove("pop");
-        void questionCard.offsetWidth; // 重新觸發動畫
-        questionCard.classList.add("pop");
-      }
+      questionCard.classList.remove("pop");
+      void questionCard.offsetWidth;
+      questionCard.classList.add("pop");
 
       lessonTag.textContent = "出處：" + item.lesson;
       questionText.textContent = "請選出「" + item.english + "」的正確中文意思：";
@@ -426,7 +408,6 @@
         btn.textContent = opt;
         btn.className = "option-btn";
 
-        // 隨機亮色
         const color = randomFrom(optionColors);
         btn.style.backgroundColor = color;
         btn.style.borderColor = color;
@@ -440,7 +421,7 @@
     }
 
     function checkAnswer(selectedChinese) {
-      if (!isQuestionActive || !currentQuestion) return;
+      if (!isQuestionActive) return;
 
       if (selectedChinese === currentQuestion.correctChinese) {
         ore += 1;
