@@ -21,7 +21,7 @@
 <section id="play" class="hidden"><div class="kpis"><div class="kpi"><b id="grade">0</b><span>百分制 / 100</span></div><div class="kpi"><b id="pts">0</b><span>遊戲積分</span></div><div class="kpi"><b id="time">07:00</b><span>剩餘時間</span></div><div class="kpi"><b id="done">0/26</b><span>已配對</span></div></div>
 <div class="levelInfo"><span id="currentLevel">第 1 / 4 關</span><span id="combo">連擊 0 🔥</span></div><div class="track"><div class="fill" id="progress"></div></div>
 <div class="columns"><div><div class="colHeader">🇬🇧 ENGLISH</div><div id="enCards" class="colCards"></div></div><div><div class="colHeader">🇹🇼 中文</div><div id="zhCards" class="colCards"></div></div></div>
-<div id="feedback" role="status" aria-live="polite">請點選一張英文與一張中文配對。</div><div class="row"><button class="cta ghost" id="soundToggle">🔊 音效：開</button><button class="cta ghost" id="musicToggle">🎵 音樂：開</button><button class="cta secondary" id="quit">結束本局</button></div></section>
+<div id="feedback" role="status" aria-live="polite">請點選一張英文與一張中文配對。</div><div class="row"><button class="cta ghost" id="soundToggle">🔊 音效：開</button><button class="cta ghost" id="musicToggle">🎶 活力音樂：開</button><button class="cta secondary" id="quit">結束本局</button></div></section>
 <section id="stageClear" class="panel hidden center"><div class="big">🌟</div><div class="levelBadge" id="clearTitle">第 1 關完成！</div><h2>太棒了，繼續挑戰！</h2><p class="sub" id="clearDetail">你已配對 8 / 26 組。</p><p class="small">進入下一關前計時暫停。</p><button id="nextLevel" class="cta">➡️ 下一關</button></section>
 <section id="finish" class="panel hidden center"><div id="endIcon" class="big">🏆</div><h2 id="endTitle">挑戰完成！</h2><div id="finalGrade" class="endScore">100 分</div><p id="finalPts" class="statsDetails">遊戲積分 0 分</p><p id="finalDetail" class="statsDetails"></p><div id="saveMsg" class="note"></div><div class="below"><button id="again" class="cta">🔁 再挑戰一次</button><button id="copyResult" class="cta secondary">📋 複製成績</button><button id="finishRank" class="cta secondary">🏆 本機排名</button></div></section>
 <section id="rankPanel" class="panel leader hidden"><div class="leaderhead"><div><h2>🏆 本機班級排名</h2><p id="rankHeading" class="sub">請輸入班級</p></div><button id="refresh" class="cta secondary">↻ 更新</button></div><div id="rankRows"></div><p class="small muted">此排名只包含目前這部手機或電腦上的紀錄；跨裝置共用排名尚未啟用。每個班級、座號及組別只保留最高百分制成績，同分再比較積分與用時。</p></section>
@@ -41,8 +41,95 @@ function $show(id){['hub','intro','play','stageClear','finish'].forEach(i=>el(i)
 function rand(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function tone(f,dur=.15,vol=.055,start=0){if(!st.audio)return;try{const a=st.audio,t=a.currentTime+start,o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.02)}catch(e){}}
 function sfx(v){if(!st.fx)return;if(v==='good'){tone(523,.15,.07,0);tone(659,.16,.08,.11);tone(784,.18,.08,.22)}else if(v==='bad'){tone(196,.24,.09);tone(164,.23,.07,.12)}else tone(390,.08,.035)}
-function playMusic(){if(!st.music||st.musicTimer||!st.running)return;let step=0;const notes=[261,329,392,329,293,349,440,349,261,329,440,392,293,349,392,329];st.musicTimer=setInterval(()=>{if(st.running&&st.music)tone(notes[step++%notes.length],.36,.017)},470)}
-function stopMusic(){clearInterval(st.musicTimer);st.musicTimer=null}
+// Upbeat arcade BGM: 144 BPM, four-bar major-key lead, bouncing bass and a drum groove.
+// All audio is synthesized locally with Web Audio; no external file or connection is needed.
+const MUSIC_BPM=144;
+const MUSIC_STEP=60/MUSIC_BPM/2; // eighth-note grid
+const MUSIC_LEAD=[523.25,0,659.25,783.99,880,783.99,659.25,0,
+ 587.33,0,698.46,880,783.99,698.46,587.33,0,
+ 659.25,783.99,1046.5,987.77,880,783.99,659.25,0,
+ 698.46,880,783.99,659.25,587.33,659.25,523.25,0];
+const MUSIC_BASS=[130.81,98,110,87.31]; // C – G – Am – F
+function musicVoice(freq,when,duration,volume,type='triangle'){
+  if(!st.audio||!st.musicOut)return;
+  const a=st.audio,o=a.createOscillator(),g=a.createGain(),end=when+duration;
+  o.type=type;o.frequency.setValueAtTime(freq,when);
+  g.gain.setValueAtTime(.0001,when);
+  g.gain.exponentialRampToValueAtTime(volume,when+.018);
+  g.gain.setValueAtTime(volume*.65,Math.max(when+.02,end-.075));
+  g.gain.exponentialRampToValueAtTime(.0001,end);
+  o.connect(g);g.connect(st.musicOut);o.start(when);o.stop(end+.015);
+}
+function musicDrum(which,when){
+  const a=st.audio;if(!a||!st.musicOut)return;
+  if(which==='kick'){
+    const o=a.createOscillator(),g=a.createGain();o.type='sine';
+    o.frequency.setValueAtTime(150,when);
+    o.frequency.exponentialRampToValueAtTime(53,when+.12);
+    g.gain.setValueAtTime(.065,when);
+    g.gain.exponentialRampToValueAtTime(.0001,when+.15);
+    o.connect(g);g.connect(st.musicOut);o.start(when);o.stop(when+.16);
+    return;
+  }
+  if(!st.drumNoise){
+    const len=Math.round(a.sampleRate*.12),buf=a.createBuffer(1,len,a.sampleRate),data=buf.getChannelData(0);
+    for(let i=0;i<len;i++)data[i]=Math.random()*2-1;
+    st.drumNoise=buf;
+  }
+  const o=a.createBufferSource(),hp=a.createBiquadFilter(),g=a.createGain();
+  o.buffer=st.drumNoise;hp.type='highpass';hp.frequency.value=which==='snare'?1700:6000;
+  const duration=which==='snare'?.095:.032;
+  g.gain.setValueAtTime(which==='snare'?.026:.012,when);
+  g.gain.exponentialRampToValueAtTime(.0001,when+duration);
+  o.connect(hp);hp.connect(g);g.connect(st.musicOut);o.start(when);o.stop(when+duration+.003);
+}
+function scheduleMusicStep(step,when){
+  const pos=step%32,beat=pos%8,bar=Math.floor(pos/8);
+  const lead=MUSIC_LEAD[pos];
+  if(lead)musicVoice(lead,when,.17,.046,'square');
+  if(beat===0||beat===4)musicDrum('kick',when);
+  if(beat===2||beat===6)musicDrum('snare',when);
+  musicDrum('hat',when);
+  if(beat===0||beat===3||beat===4||beat===7){
+    const root=MUSIC_BASS[bar];
+    musicVoice(beat===7?root*2:root,when,.14,.039,'triangle');
+  }
+  if(beat===2||beat===6){
+    const root=MUSIC_BASS[bar]*4;
+    musicVoice(root,when,.14,.011,'sine');
+  }
+}
+function playMusic(){
+  if(!st.music||st.musicTimer||!st.running||!st.audio||document.hidden)return;
+  const a=st.audio;
+  try{
+    st.musicOut=a.createGain();st.musicOut.gain.setValueAtTime(.0001,a.currentTime);
+    st.musicOut.gain.linearRampToValueAtTime(.65,a.currentTime+.15);
+    st.musicOut.connect(a.destination);
+    st.musicStep=0;st.musicNext=a.currentTime+.045;
+    const schedule=()=>{
+      if(!st.running||!st.music||document.hidden)return;
+      let n=0;
+      while(st.musicNext<a.currentTime+.25&&n++<8){
+        scheduleMusicStep(st.musicStep++,st.musicNext);
+        st.musicNext+=MUSIC_STEP;
+      }
+    };
+    schedule();st.musicTimer=setInterval(schedule,70);
+  }catch(err){stopMusic()}
+}
+function stopMusic(){
+  clearInterval(st.musicTimer);st.musicTimer=null;
+  if(st.musicOut&&st.audio){
+    const a=st.audio,g=st.musicOut.gain,t=a.currentTime;
+    try{g.cancelScheduledValues(t);g.setValueAtTime(Math.max(.0001,g.value),t);g.linearRampToValueAtTime(.0001,t+.09)}catch(err){}
+    st.musicOut=null;
+  }
+}
+document.addEventListener('visibilitychange',()=>{
+  // Prevent audio surprises when a student switches apps or locks the screen.
+  if(document.hidden)stopMusic();else if(st.running&&st.music)playMusic();
+});
 function currentGrade(){return Math.min(100,Math.max(0,Math.round(st.done/total*100-st.wrong*2)))}
 function clock(v){return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')}
 function stats(){el('grade').textContent=currentGrade();el('pts').textContent=st.score;el('time').textContent=clock(st.remaining);el('done').textContent=st.done+'/'+total;el('combo').textContent='連擊 '+st.streak+' 🔥';el('progress').style.width=(st.done/total*100)+'%';el('time').style.color=st.remaining<=30?'#ff93b4':'';el('currentLevel').textContent='第 '+(st.level+1)+' / 4 關'}
@@ -60,5 +147,5 @@ function nextLevel(){if(st.finished)return;st.level++;st.running=true;drawLevel(
 function finish(won){if(st.finished)return;st.finished=true;st.running=false;stopMusic();clearInterval(st.timer);if(won){st.score+=st.remaining*2;confetti()}const r={cls:st.cls,seat:st.seat,name:st.name,grade:currentGrade(),score:st.score,seconds:st.rawSec,wrong:st.wrong,done:st.done};saveLocal(r);el('endIcon').textContent=won?'🏆':'⏳';el('endTitle').textContent=won?'恭喜完成所有 26 組配對！':'本局結束';el('finalGrade').textContent=r.grade+' / 100 分';el('finalPts').textContent='遊戲積分 '+r.score+' 點';el('finalDetail').textContent='配對 '+r.done+' / 26 組｜配錯 '+r.wrong+' 次｜耗時 '+clock(r.seconds)+'｜第 '+st.group+' 組';el('saveMsg').textContent='✅ 成績已保存在本裝置。不同手機的成績不會自動同步到老師的排行榜；可按「複製成績」回報老師。';$show('finish');el('rankPanel').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'})}
 async function copyResult(){const s=`龍騰 B1 L1–L6 配對消除遊戲｜第${st.group}組\n班級：${st.cls}　座號：${st.seat}　暱稱：${st.name}\n百分制：${currentGrade()}/100 分\n遊戲積分：${st.score} 點\n答對配對：${st.done}/26　錯誤：${st.wrong} 次　耗時：${clock(st.rawSec)}`;try{await navigator.clipboard.writeText(s);el('saveMsg').textContent='✅ 成績文字已複製，可貼到老師指定的繳交處。'}catch(e){prompt('請複製以下成績：',s)}}
 function setup(){const grid=el('groupGrid');for(let i=1;i<=6;i++){let a=document.createElement('a');a.className='gameCard';a.href='?g='+i;a.innerHTML='<strong>🎯 第 '+i+' 組</strong><span>混合六課 Words ＋ Phrases</span><b>26 題・四關・100 分制 →</b>';grid.appendChild(a)}if(!st.group){$show('hub');return}el('gamePill').textContent='第 '+st.group+' 組';el('introTitle').textContent='第 '+st.group+' 組｜26 題混合挑戰';el('heroSub').textContent='第 '+st.group+' 組・L1～L6 Words + Phrases 混合｜26 組・四關';$show('intro');el('rankPanel').classList.remove('hidden');rankings()}
-el('start').onclick=start;el('nextLevel').onclick=nextLevel;el('again').onclick=start;el('quit').onclick=()=>{if(confirm('確定要結束本局並記錄目前成績嗎？'))finish(false)};el('copyResult').onclick=copyResult;el('soundToggle').onclick=()=>{st.fx=!st.fx;el('soundToggle').textContent=st.fx?'🔊 音效：開':'🔇 音效：關'};el('musicToggle').onclick=()=>{st.music=!st.music;el('musicToggle').textContent=st.music?'🎵 音樂：開':'🔇 音樂：關';if(st.music)playMusic();else stopMusic()};el('seeRank').onclick=()=>{rankings();el('rankPanel').classList.remove('hidden');el('rankPanel').scrollIntoView({behavior:'smooth'})};el('finishRank').onclick=()=>{rankings();el('rankPanel').classList.remove('hidden');el('rankPanel').scrollIntoView({behavior:'smooth'})};el('refresh').onclick=rankings;el('classCode').oninput=rankings;setup();
+el('start').onclick=start;el('nextLevel').onclick=nextLevel;el('again').onclick=start;el('quit').onclick=()=>{if(confirm('確定要結束本局並記錄目前成績嗎？'))finish(false)};el('copyResult').onclick=copyResult;el('soundToggle').onclick=()=>{st.fx=!st.fx;el('soundToggle').textContent=st.fx?'🔊 音效：開':'🔇 音效：關'};el('musicToggle').onclick=()=>{st.music=!st.music;el('musicToggle').textContent=st.music?'🎶 活力音樂：開':'🔇 活力音樂：關';if(st.music)playMusic();else stopMusic()};el('seeRank').onclick=()=>{rankings();el('rankPanel').classList.remove('hidden');el('rankPanel').scrollIntoView({behavior:'smooth'})};el('finishRank').onclick=()=>{rankings();el('rankPanel').classList.remove('hidden');el('rankPanel').scrollIntoView({behavior:'smooth'})};el('refresh').onclick=rankings;el('classCode').oninput=rankings;setup();
 </script></body></html>
