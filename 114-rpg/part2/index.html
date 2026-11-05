@@ -46,5 +46,13 @@ function retryWrong(){if(!state.allWrong.length){finish();return}let qs=state.al
 function renderRetry(){let q=state.reviewQueue[state.reviewIndex];if(!q){$("app").innerHTML='<div style="text-align:center;font-size:55px">🎊🌟</div><h2>錯題再挑戰完成！</h2><p class="result">答對 '+state.reviewCorrect+' / '+state.reviewQueue.length+' 題</p><p>你願意再試一次，就是最棒的進步！</p><button class="primary" onclick="finish()">返回冒險成績單</button>';return}$("app").innerHTML='<h2>⚔️ 錯題再挑戰 '+(state.reviewIndex+1)+' / '+state.reviewQueue.length+'</h2><h2>'+esc(q.question)+'</h2>'+q.options.map((o,i)=>'<button class="option" onclick="answerRetry('+i+')">'+("ABCD"[i])+'. '+esc(o)+'</button>').join('')+'<p id="retryFeedback"></p><button id="retryNext" class="primary hidden" onclick="state.reviewIndex++;renderRetry()">下一題 ➜</button>'}
 function answerRetry(i){let q=state.reviewQueue[state.reviewIndex],ok=q.options[i]===q.answer;document.querySelectorAll(".option").forEach((b,j)=>{b.disabled=true;if(q.options[j]===q.answer)b.classList.add("correct");if(j===i&&!ok)b.classList.add("wrong")});if(ok)state.reviewCorrect++;beep(ok);$("retryFeedback").textContent=(ok?"✅ 太棒了！":"💪 再記住這個重點：")+q.note;$("retryNext").classList.remove("hidden")}
 
-home();
+if(new URLSearchParams(location.search).get("preview")==="result"){
+state.cls="示範班級";state.seat="01";state.name="測試學生";state.score=70;
+state.results=[{level:"單字迷宮",correct:7,total:10,seconds:130}];
+state.allWrong=[
+{question:"「plastic」的中文意思是？",answer:"塑膠",chosen:"容器",note:"plastic → 塑膠"},
+{question:"「break down」的中文意思是？",answer:"分解；故障",chosen:"丟棄",note:"break down → 分解；故障"},
+{question:"should + ______",answer:"VR",chosen:"V-ing",note:"should + 原形動詞（VR）"}
+];finish();
+}else{home();}
 </script></body></html>
