@@ -9,7 +9,18 @@ function tone(freq,t,dur,volume=.04){if(!ctx||ctx.state!=="running")return;let o
 async function startMusic(){try{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();if(ctx.state!=="running")return;musicOn=true;$("music").textContent="🔊 音樂：開";if(!timer)timer=setInterval(()=>{try{tone(melody[beat%melody.length],ctx.currentTime,.18,.07);if(beat%4===0)tone(130,ctx.currentTime,.12,.035);beat++}catch(e){}},220)}catch(e){$("music").textContent="🔊 點此開啟音樂"}}
 function toggleMusic(){if(musicOn){musicOn=false;clearInterval(timer);timer=null;ctx?.suspend();$("music").textContent="🔇 音樂：關"}else startMusic()}
 function beep(ok){try{tone(ok?660:175,ctx.currentTime,.16,.1)}catch(e){}}
-function makeQs(items,type,limit){let pool=items.map(([en,zh])=>({en,zh}));return shuffle(pool).slice(0,limit||pool.length).map(q=>{let other=shuffle([...new Set(pool.filter(x=>x!==q).map(x=>x.zh))]).slice(0,3);if(other.length<3){let extras=type==="syn"?["create","provide","discard","correctly","encourage","unbelievable"]:["以上皆非","不正確","不適用","其他"];other=[...other,...extras.filter(x=>x!==q.zh&&!other.includes(x))].slice(0,3)}return {question:type==="syn"?"與「"+q.en+"」同義的是？":type==="grammar"?q.en+" 表示？":"「"+q.en+"」的中文意思是？",answer:q.zh,options:shuffle([q.zh,...other]),note:q.en+" → "+q.zh}})}
+const GRAMMAR_QUIZ=[
+{question:"should + ______",answer:"VR",options:["VR","V-ing","p.p.","to V"],note:"should + 原形動詞（VR）"},
+{question:"too much + ______",answer:"不可數名詞",options:["不可數名詞","可數複數名詞","原形動詞","形容詞"],note:"too much + 不可數名詞；too many + 可數複數名詞"},
+{question:"look + ______（看起來）",answer:"形容詞",options:["形容詞","副詞","原形動詞","介系詞"],note:"look 為連綴動詞，後接形容詞"},
+{question:"What does + S + ______?（問外貌）",answer:"look like",options:["look like","like looking","looks like","looking like"],note:"What does + S + look like? 詢問外觀或長相"},
+{question:"be made ______ + 材料",answer:"of",options:["of","at","for","with"],note:"be made of + 材料"},
+{question:"be passionate about + ______",answer:"N / V-ing",options:["N / V-ing","VR","to V","p.p."],note:"about 是介系詞，後接名詞或 V-ing"},
+{question:"major ______ + 學科",answer:"in",options:["in","on","at","for"],note:"major in + 學科"},
+{question:"現在完成式：have / has + ______",answer:"p.p.",options:["p.p.","VR","V-ing","to V"],note:"have / has + p.p. 為現在完成式"},
+{question:"過去完成式：had + ______",answer:"p.p.",options:["p.p.","VR","V-ing","to V"],note:"had + p.p. 為過去完成式"}
+];
+function makeQs(items,type,limit){if(type==="grammar")return shuffle(GRAMMAR_QUIZ).slice(0,limit||GRAMMAR_QUIZ.length).map(q=>({...q,options:shuffle(q.options)}));let pool=items.map(([en,zh])=>({en,zh}));return shuffle(pool).slice(0,limit||pool.length).map(q=>{let other=shuffle([...new Set(pool.filter(x=>x!==q).map(x=>x.zh))]).slice(0,3);if(other.length<3){let extras=type==="syn"?["create","provide","discard","correctly","encourage","unbelievable"]:["以上皆非","不正確","不適用","其他"];other=[...other,...extras.filter(x=>x!==q.zh&&!other.includes(x))].slice(0,3)}return {question:type==="syn"?"與「"+q.en+"」同義的是？":type==="grammar"?q.en+" 表示？":"「"+q.en+"」的中文意思是？",answer:q.zh,options:shuffle([q.zh,...other]),note:q.en+" → "+q.zh}})}
 function makeLevel(n){if(n===4){let a=[...makeQs(DATA.words,"zh",5),...makeQs(DATA.phrases,"zh",5),...makeQs(DATA.grammar,"grammar",5),...makeQs(DATA.synonyms,"syn",5)];return shuffle(a)}return makeQs(LEVELS[n].items,n===2?"grammar":LEVELS[n].type)}
 function save(){try{localStorage.setItem("english114rpg5",JSON.stringify(state))}catch(e){}}
 function load(){try{let x=JSON.parse(localStorage.getItem("english114rpg5"));if(x&&Array.isArray(x.results))state={...state,...x}}catch(e){}}
