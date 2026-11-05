@@ -11,8 +11,8 @@ function toggleMusic(){if(musicOn){musicOn=false;clearInterval(timer);timer=null
 function beep(ok){try{tone(ok?660:175,ctx.currentTime,.16,.1)}catch(e){}}
 const GRAMMAR_QUIZ=[
 {question:"should + ______",answer:"VR",options:["VR","V-ing","p.p.","to V"],note:"should + 原形動詞（VR）"},
-{question:"too much + ______",answer:"不可數名詞",options:["不可數名詞","可數複數名詞","原形動詞","形容詞"],note:"too much + 不可數名詞；too many + 可數複數名詞"},
-{question:"look + ______（看起來）",answer:"形容詞",options:["形容詞","副詞","原形動詞","介系詞"],note:"look 為連綴動詞，後接形容詞"},
+{question:"too much + ______",answer:"不可數名詞",options:["不可數名詞","可數複數名詞","原形動詞","形容詞"],note:"too much + 不可數名詞；too many + 可數複數名詞"},{question:"too many + ______",answer:"可數複數名詞",options:["可數複數名詞","不可數名詞","形容詞","原形動詞"],note:"too many + 可數複數名詞；too much + 不可數名詞"},
+{question:"She looks ______.",answer:"tired",options:["tired","tiredly","tire","to tire"],note:"look 為連綴動詞，後接形容詞：She looks tired."},
 {question:"What does + S + ______?（問外貌）",answer:"look like",options:["look like","like looking","looks like","looking like"],note:"What does + S + look like? 詢問外觀或長相"},
 {question:"be made ______ + 材料",answer:"of",options:["of","at","for","with"],note:"be made of + 材料"},
 {question:"be passionate about + ______",answer:"N / V-ing",options:["N / V-ing","VR","to V","p.p."],note:"about 是介系詞，後接名詞或 V-ing"},
